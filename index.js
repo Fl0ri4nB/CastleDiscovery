@@ -1,5 +1,19 @@
 /* 
 Last update : 20231023
+
+TODO
+---------
+
+- Revoir la fonction openChestInventory ()
+     - Utiliser p-map au lieu de Promise.all ? 
+- Revoir la fonction getChestStatus ()
+     - Utiliser retry() pour pérvenir les indispo temporaire de la réponsé API
+	 - Utiliser axios() au lieu de fetch() ? 
+- Supprimer visitedRoomID et utiliser listVisitedRooms[x].id à la place
+
+---------
+
+
 */
 
 import Bottleneck from "bottleneck";
