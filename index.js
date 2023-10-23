@@ -1,15 +1,8 @@
 /* 
 Last update : 20231023
-
-TODO
----------
-- Utiliser axios() au lieu de fetch() ? 
----------
-
-*/ 
+*/
 
 import Bottleneck from "bottleneck";
-import axios from "axios";
 import retry from 'async-retry'
 import pMap from 'p-map';
 
@@ -74,12 +67,10 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
   if(pListRoomsIDs.length==0)return
   let nextLevelListRoomsID = [] //Liste des rooms suivantes
   let listPromise = [] // Liste de stockage des Promise
-  
   await pMap(pListRoomsIDs, async roomID => {
-    console.log ("[" + listVisitedRooms.length + "]")
      if (listVisitedRoomID.includes(roomID) == false) 
      {let myCurrentRoom = await limiter.schedule(() => openRoom(roomID));
-        listVisitedRooms.push(myCurrentRoom) // TODO Utile  ? (juste pour les stats de fin ? )
+        listVisitedRooms.push(myCurrentRoom)
         for (let idConnectedRooms in myCurrentRoom.connectedRoomsID) { nextLevelListRoomsID.push(myCurrentRoom.connectedRoomsID[idConnectedRooms]) }
         listVisitedRoomID.push(myCurrentRoom.id);
         for (let chestID in myCurrentRoom.chests) {
@@ -89,7 +80,7 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
   }, {concurrency: 500}); 
    return exploreCastleByLevel(nextLevelListRoomsID, level + 1)
   }
- 
+
 async function openRoom(pRoomID) {
   try {
     const response = await fetch(castleURL + pRoomID);
