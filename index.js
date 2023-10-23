@@ -3,16 +3,8 @@ Last update : 20231023
 
 TODO
 ---------
-
-- Revoir la fonction openChestInventory ()
-     - Utiliser p-map au lieu de Promise.all ? 
-- Revoir la fonction getChestStatus ()
-     - Utiliser retry() pour prévenir les indispo temporaire de la réponsé API
-	 - Utiliser axios() au lieu de fetch() ? 
-- Supprimer listVisitedRoomID et utiliser listVisitedRooms[x].id à la place
-
+- Utiliser axios() au lieu de fetch() ? 
 ---------
-
 
 */ 
 
@@ -22,14 +14,12 @@ import retry from 'async-retry'
 import pMap from 'p-map';
 
 const limiter = new Bottleneck({ maxConcurrent: 1000, minTime: 0 });
-const limiter2 = new Bottleneck({ maxConcurrent: 5000, minTime: 0 }); //TODO Utile ?
 const listVisitedRoomID = [] //TODO  A merger avec listVisitedRooms
 const listVisitedRooms = []
 const listChests = []
 const CHEST_EMPTY_STATUS = "This chest is empty :/ Try another one!"
 const castleURL = "https://infinite-castles.azurewebsites.net/"
 const castleFirstRoom = "castles/1/rooms/entry"
-let nbChest=0; //DEBUG / TODO : A supprimer
 
 startExploration()
 
@@ -40,8 +30,7 @@ async function startExploration() {
 }
 
 async function getChestStatus(pChest) {
-  nbChest++
-  console.log(nbChest)
+
   return retry(async bail => {
     try {
       let response = await fetch(castleURL + pChest.id);
@@ -85,40 +74,30 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
   if(pListRoomsIDs.length==0)return
   let nextLevelListRoomsID = [] //Liste des rooms suivantes
   let listPromise = [] // Liste de stockage des Promise
-  for (let roomID in pListRoomsIDs) {
-    if (listVisitedRoomID.includes(pListRoomsIDs[roomID]) == false) { //Petit controle pour éviter de tourner en rond, mais apparament, le cas ne se présente pas 
-	//TODO refacto pour ne pas avoir une variable dédié (listVisitedRoomID). utilisation de .some() ? 
-      const nextRoomPromise = limiter.schedule(() => openRoom(pListRoomsIDs[roomID]))
-      listPromise.push(nextRoomPromise) // Ajout dans la liste des promise en cours
-    }
-  }
-  await Promise.all(listPromise) 
-    .then((promisedListRooms) => {
-      for (let id in promisedListRooms) {
-        let myCurrentRoom = promisedListRooms[id]
-        listVisitedRooms.push(myCurrentRoom) // Utilisé juste pour les stats de fin 
+  
+  await pMap(pListRoomsIDs, async roomID => {
+    console.log ("[" + listVisitedRooms.length + "]")
+     if (listVisitedRoomID.includes(roomID) == false) 
+     {let myCurrentRoom = await limiter.schedule(() => openRoom(roomID));
+        listVisitedRooms.push(myCurrentRoom) // TODO Utile  ? (juste pour les stats de fin ? )
         for (let idConnectedRooms in myCurrentRoom.connectedRoomsID) { nextLevelListRoomsID.push(myCurrentRoom.connectedRoomsID[idConnectedRooms]) }
         listVisitedRoomID.push(myCurrentRoom.id);
-
         for (let chestID in myCurrentRoom.chests) {
-          let currentChest = new Chest(myCurrentRoom.chests[chestID], null, myCurrentRoom.id) //Creation du chest, sans connaitre son status pour le moment. On ouvrira plus tard, une fois l'exploration terminée // TODO Optimisable en ouvrant directement ? Surcharge API aux premiers essai :/ 
-          listChests.push(currentChest)
+          listChests.push(new Chest(myCurrentRoom.chests[chestID], null, myCurrentRoom.id)) 
         }
-      }
-    })
-  return exploreCastleByLevel(nextLevelListRoomsID, level + 1)
-}
-
+     }
+  }, {concurrency: 500}); 
+   return exploreCastleByLevel(nextLevelListRoomsID, level + 1)
+  }
+ 
 async function openRoom(pRoomID) {
   try {
     const response = await fetch(castleURL + pRoomID);
     const roomData = await response.json();
-    const currentRoom = new Room(roomData.id, roomData.rooms, roomData.chests);
-    return currentRoom;
+    return new Room(roomData.id, roomData.rooms, roomData.chests);
   }
   catch (error) {console.log("[Error on openRoom] : pRoomID="  + pRoomID + " Error : " + error)}
 }
-
 
 // Declaration Objets
 class Chest {
