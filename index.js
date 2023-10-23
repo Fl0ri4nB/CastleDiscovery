@@ -2,19 +2,12 @@ import Bottleneck from "bottleneck";
 
 const limiter = new Bottleneck({ maxConcurrent: 1000, minTime: 0 });
 const limiter2 = new Bottleneck({ maxConcurrent: 5000, minTime: 0 }); //TODO Utile ?
-const MAX_LEVEL = 4 // DEBUG | TODO : Supprimer [-1]
-const DEBUG_level = 0 // DEBUG | TODO : Supprimer [-1]
 const visitedRoomID = [] //TODO  A merger avec listVisitedRooms
-let nbChestChecked=0
 const listVisitedRooms = []
 const listChests = []
-const listnewChest = []
-const errorRoomID = [] //DEBUG | TODO : Supprimer [-1]
-const listErrorChest=[]
 const CHEST_EMPTY_STATUS = "This chest is empty :/ Try another one!"
 const castleURL = "https://infinite-castles.azurewebsites.net/"
 const castleFirstRoom = "castles/1/rooms/entry"
-let visitedRoomCount = 0 //DEBUG | TODO : Supprimer [-1]
 let notEmptyChestCount = 0 //TODO Liste de not_empty_chest ? ou juste DEBUG et donc Supprimer
 
 function wait(milliseconds){
@@ -33,7 +26,10 @@ function exportDataChest() {
   console.log("chestID;chestStatus;roomID")
   for (let chestID in listChests) {
     if (listChests[chestID].status != CHEST_EMPTY_STATUS)
+    {
       console.log(listChests[chestID].id + ";" + listChests[chestID].status + ";" + listChests[chestID].room)
+      notEmptyChestCount++;
+    }
   }
 
   if (DEBUG_level > 0) console.log("End of Exploration ! ")
@@ -42,10 +38,6 @@ function exportDataChest() {
 }
 
 async function exploreCastleByLevel(pListRoomsIDs, level) {
-  if (pListRoomsIDs.length == 0 || (MAX_LEVEL && level > MAX_LEVEL)) return  // TODO : Supprimer [-1]
-
-  if (DEBUG_level > 0) console.log("Exploring Castle Level " + level + " [" + pListRoomsIDs.length + " rooms in this level]") //DEBUG | TODO : Supprimer [-1]
-
   let nextLevelListRoomsID = [] //Liste des rooms suivantes
   let listPromise = [] // Liste de stockage des Promise
   for (let roomID in pListRoomsIDs) {
@@ -72,7 +64,6 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
 }
 
 async function openChestInventory(pListChest) { //On ouvre les coffres TODO : voir si optim possible
-  if (DEBUG_level > 0) console.log(pListChest.length + " chests found. Let's open them now !") //DEBUG | TODO : Supprimer [-1]
   const listPromiseChestStatus = [] // Liste de stockage des Promise
   for (let chestID in pListChest) {
     const currentChestPromise = limiter2.schedule(() => getChestStatus(pListChest[chestID]))
@@ -82,8 +73,6 @@ async function openChestInventory(pListChest) { //On ouvre les coffres TODO : vo
 }
 
 async function openRoom(pRoomID) {
-  visitedRoomCount++ //DEBUG TODO : Supprimer [-1]
-  if (DEBUG_level <0) console.log("[" + pRoomID + "]") //DEBUG TODO : Supprimer [-1]
   try {
     const currentRoomURL = castleURL + pRoomID;
     const response = await fetch(currentRoomURL); //TODO : Factoriser avec précédente [-1]
@@ -91,15 +80,10 @@ async function openRoom(pRoomID) {
     const currentRoom = new Room(roomData.id, roomData.rooms, roomData.chests);
     return currentRoom; //TODO Factoriser avec précédente [-1]
   }
-  catch (error) {
-    if (DEBUG_level > 0) console.error("[Err " + errorRoomID.length + " ] " + visitedRoomCount); //DEBUG | TODO : Supprimer [-1]
-    errorRoomID.push(pRoomID) //DEBUG | TODO : Supprimer [-1]
-    console.log(error)
-  }
+  catch (error) {console.log("[Error on openRoom] : pRoomID="  + pRoomID + "Error : " + error)}
 }
 
 async function getChestStatus(pChest) {
-  nbChestChecked++
   try {
     const chestURL = castleURL + pChest.id;
     let response = await fetch(chestURL); // TODO : Factoriser avec précédente [-1]
@@ -111,9 +95,6 @@ async function getChestStatus(pChest) {
          chestData = await response.json();
       }
     pChest.status = chestData.status
-    
-    if (pChest.status != CHEST_EMPTY_STATUS) { notEmptyChestCount++ } // TODO A mettre dans ExportData ()
-    if (DEBUG_level > 0)console.log ("["+ notEmptyChestCount + "/" + nbChestChecked +"]") //DEBUG | TODO : Supprimer [-1]
     return pChest
   }
   catch (error) {console.log(error)}
