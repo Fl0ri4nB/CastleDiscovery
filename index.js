@@ -37,10 +37,10 @@ startExploration()
 async function startExploration() {
   await exploreCastleByLevel([castleFirstRoom], 0)
   await openChestInventory(listChests)
-  exportDataChest(true)
+  displayChestData(true)
 }
 
-function exportDataChest(displaySummary) {
+function displayChestData(displaySummary) {
   console.log("chestID;chestStatus;roomID")
   for (let chestID in listChests) {
     if (listChests[chestID].status != CHEST_EMPTY_STATUS)
@@ -63,22 +63,23 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
   let nextLevelListRoomsID = [] //Liste des rooms suivantes
   let listPromise = [] // Liste de stockage des Promise
   for (let roomID in pListRoomsIDs) {
-    if (visitedRoomID.includes(pListRoomsIDs[roomID]) == false) { //Petit controle pour éviter de tourner en rond, mais apparament, le cas ne se présente pas TODO refacto pour ne pas avoir une variable dédié (visitedRoomID) ? utilisation de.some() ? 
+    if (visitedRoomID.includes(pListRoomsIDs[roomID]) == false) { //Petit controle pour éviter de tourner en rond, mais apparament, le cas ne se présente pas 
+	//TODO refacto pour ne pas avoir une variable dédié (visitedRoomID). utilisation de .some() ? 
       const nextRoomPromise = limiter.schedule(() => openRoom(pListRoomsIDs[roomID]))
       listPromise.push(nextRoomPromise) // Ajout dans la liste des promise en cours
     }
   }
-  await Promise.all(listPromise) // Attente de l'éxécution de toutes les requests //TODO  : await utile? 
+  await Promise.all(listPromise)
     .then((promisedListRooms) => {
       for (let id in promisedListRooms) {
         let myCurrentRoom = promisedListRooms[id]
-        listVisitedRooms.push(myCurrentRoom) // TODO Utile  ? (juste pour les stats de fin ? )
+        listVisitedRooms.push(myCurrentRoom) // Utilisé juste pour les stats de fin 
         for (let idConnectedRooms in myCurrentRoom.connectedRoomsID) { nextLevelListRoomsID.push(myCurrentRoom.connectedRoomsID[idConnectedRooms]) }
         visitedRoomID.push(myCurrentRoom.id);
 
         for (let chestID in myCurrentRoom.chests) {
-          let currentChest = new Chest(myCurrentRoom.chests[chestID], null, myCurrentRoom.id) //Creation du chest, sans connaitre son status pour le moment. On ouvrira plus tard, une fois l'exploration terminée // TODO Optimisable en ouvrant directement ? 
-          listChests.push(currentChest) //TODO : factoriser avec la précédente [-1]
+          let currentChest = new Chest(myCurrentRoom.chests[chestID], null, myCurrentRoom.id) //Creation du chest, sans connaitre son status pour le moment. On ouvrira plus tard, une fois l'exploration terminée // TODO Optimisable en ouvrant directement ? Surcharge API aux premiers essai :/ 
+          listChests.push(currentChest)
         }
       }
     })
@@ -90,14 +91,14 @@ async function openRoom(pRoomID) {
     const response = await fetch(castleURL + pRoomID); 
     const roomData = await response.json();
     const currentRoom = new Room(roomData.id, roomData.rooms, roomData.chests);
-    return currentRoom; //TODO Factoriser avec précédente [-1]
+    return currentRoom;
   }
   catch (error) {console.log("[Error on openRoom] : pRoomID="  + pRoomID + "Error : " + error)}
 }
 
 
-async function openChestInventory(pListChest) { //On ouvre les coffres TODO : voir si optim possible
-  const listPromiseChestStatus = [] // Liste de stockage des Promise
+async function openChestInventory(pListChest) { //On ouvre les coffres TODO : voir si optim possible, essayer "p-map"
+  const listPromiseChestStatus = []
   for (let chestID in pListChest) {
     const currentChestPromise = limiter2.schedule(() => getChestStatus(pListChest[chestID]))
     listPromiseChestStatus.push(currentChestPromise)
@@ -111,7 +112,7 @@ async function getChestStatus(pChest) {
   try {
     let response = await fetch(castleURL + pChest.id);
     let chestData = await response.json();
-    while(!chestData.status) 
+    while(!chestData.status) //TODO Utiliser un retry() à la place
       {
         await wait(1000);
          response = await fetch(chestURL);
