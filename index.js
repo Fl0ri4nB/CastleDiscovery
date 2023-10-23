@@ -17,20 +17,19 @@ TODO
 */
 
 import Bottleneck from "bottleneck";
+import axios from "axios";
+import retry from 'async-retry'
+import pMap from 'p-map';
 
 const limiter = new Bottleneck({ maxConcurrent: 1000, minTime: 0 });
-const limiter2 = new Bottleneck({ maxConcurrent: 5000, minTime: 0 }); //TODO Utile ? A tester
+const limiter2 = new Bottleneck({ maxConcurrent: 5000, minTime: 0 }); //TODO Utile ?
 const listVisitedRoomID = [] //TODO  A merger avec listVisitedRooms
 const listVisitedRooms = []
 const listChests = []
 const CHEST_EMPTY_STATUS = "This chest is empty :/ Try another one!"
 const castleURL = "https://infinite-castles.azurewebsites.net/"
 const castleFirstRoom = "castles/1/rooms/entry"
-let notEmptyChestCount = 0 //TODO Liste de not_empty_chest ? ou juste DEBUG et donc Supprimer
-
-function wait(milliseconds){
-  return new Promise(resolve => {setTimeout(resolve, milliseconds);});
-}
+let nbChest=0; //DEBUG / TODO : A supprimer
 
 startExploration()
 
@@ -40,7 +39,32 @@ async function startExploration() {
   displayChestData(true)
 }
 
+async function getChestStatus(pChest) {
+  nbChest++
+  console.log(nbChest)
+  return retry(async bail => {
+    try {
+      let response = await fetch(castleURL + pChest.id);
+      if (!response.ok) throw new Error('Network response KO :  ' + response.statusText);
+      let chestData = await response.json();
+      pChest.status = chestData.status
+    } catch (error) {
+      console.log(JSON.stringify(response))
+      bail(error)  // This will stop the retry loop if the error occurs again
+    }
+  }, {
+    retries: 5,
+  })
+}
+
+async function openChestInventory(pListChest) {
+  await pMap(pListChest, async chest => {
+       const currentChest = await limiter.schedule(() => getChestStatus(chest));
+  }, {concurrency: 1000});  // Adjust the concurrency level to your needs
+}
+
 function displayChestData(displaySummary) {
+  let notEmptyChestCount=0;
   console.log("chestID;chestStatus;roomID")
   for (let chestID in listChests) {
     if (listChests[chestID].status != CHEST_EMPTY_STATUS)
@@ -49,7 +73,6 @@ function displayChestData(displaySummary) {
       notEmptyChestCount++;
     }
   }
-
  if(displaySummary)  
  {
    console.log("End of Exploration ! ")
@@ -69,7 +92,7 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
       listPromise.push(nextRoomPromise) // Ajout dans la liste des promise en cours
     }
   }
-  await Promise.all(listPromise)
+  await Promise.all(listPromise) 
     .then((promisedListRooms) => {
       for (let id in promisedListRooms) {
         let myCurrentRoom = promisedListRooms[id]
@@ -88,41 +111,14 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
 
 async function openRoom(pRoomID) {
   try {
-    const response = await fetch(castleURL + pRoomID); 
+    const response = await fetch(castleURL + pRoomID);
     const roomData = await response.json();
     const currentRoom = new Room(roomData.id, roomData.rooms, roomData.chests);
     return currentRoom;
   }
-  catch (error) {console.log("[Error on openRoom] : pRoomID="  + pRoomID + "Error : " + error)}
+  catch (error) {console.log("[Error on openRoom] : pRoomID="  + pRoomID + " Error : " + error)}
 }
 
-
-async function openChestInventory(pListChest) { //On ouvre les coffres TODO : voir si optim possible, essayer "p-map"
-  const listPromiseChestStatus = []
-  for (let chestID in pListChest) {
-    const currentChestPromise = limiter2.schedule(() => getChestStatus(pListChest[chestID]))
-    listPromiseChestStatus.push(currentChestPromise)
-  }
-  await Promise.all(listPromiseChestStatus)
-}
-
-
-
-async function getChestStatus(pChest) {
-  try {
-    let response = await fetch(castleURL + pChest.id);
-    let chestData = await response.json();
-    while(!chestData.status) //TODO Utiliser un retry() à la place
-      {
-        await wait(1000);
-         response = await fetch(chestURL);
-         chestData = await response.json();
-      }
-    pChest.status = chestData.status
-    return pChest
-  }
-  catch (error) {}
-}
 
 // Declaration Objets
 class Chest {
