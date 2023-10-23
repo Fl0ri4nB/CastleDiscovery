@@ -1,15 +1,8 @@
 /* 
 Last update : 20231023
-
-TODO
----------
-- Utiliser axios() au lieu de fetch() ? 
----------
-
-*/ 
+*/
 
 import Bottleneck from "bottleneck";
-import axios from "axios";
 import retry from 'async-retry'
 import pMap from 'p-map';
 
