@@ -32,12 +32,13 @@ function exportDataChest() {
     }
   }
 
-  if (DEBUG_level > 0) console.log("End of Exploration ! ")
-  if (DEBUG_level > 0) console.log("Nbre Rooms : " + listVisitedRooms.length)
-  if (DEBUG_level > 0) console.log("Nbre Chests : " + listChests.length + "(" + notEmptyChestCount + " not empty)")
+ if (DEBUG_level > 0) console.log("End of Exploration ! ")
+ if (DEBUG_level > 0) console.log("Nbre Rooms : " + listVisitedRooms.length)
+ if (DEBUG_level > 0) console.log("Nbre Chests : " + listChests.length + "(" + notEmptyChestCount + " not empty)")
 }
 
 async function exploreCastleByLevel(pListRoomsIDs, level) {
+  if(pListRoomsIDs.length==0)return
   let nextLevelListRoomsID = [] //Liste des rooms suivantes
   let listPromise = [] // Liste de stockage des Promise
   for (let roomID in pListRoomsIDs) {
@@ -97,7 +98,7 @@ async function getChestStatus(pChest) {
     pChest.status = chestData.status
     return pChest
   }
-  catch (error) {console.log(error)}
+  catch (error) {}
 }
 
 // Declaration Objets
