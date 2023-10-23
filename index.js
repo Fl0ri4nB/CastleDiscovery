@@ -7,7 +7,7 @@ import retry from 'async-retry'
 import pMap from 'p-map';
 
 const limiter = new Bottleneck({ maxConcurrent: 1000, minTime: 0 });
-const listVisitedRoomID = [] //TODO  A merger avec listVisitedRooms
+const listVisitedRoomID = [] 
 const listVisitedRooms = []
 const listChests = []
 const CHEST_EMPTY_STATUS = "This chest is empty :/ Try another one!"
@@ -21,7 +21,7 @@ async function startExploration() {
   await openChestInventory(listChests)
   displayChestData(true)
 }
-
+//Récupère le status des chests (call API)
 async function getChestStatus(pChest) {
 
   return retry(async bail => {
@@ -32,19 +32,19 @@ async function getChestStatus(pChest) {
       pChest.status = chestData.status
     } catch (error) {
       console.log(JSON.stringify(response))
-      bail(error)  // This will stop the retry loop if the error occurs again
+      bail(error) 
     }
   }, {
     retries: 5,
   })
 }
-
+//Parcours la liste des "chest" pour ensuite récupérer leur status
 async function openChestInventory(pListChest) {
   await pMap(pListChest, async chest => {
     await limiter.schedule(() => getChestStatus(chest));
   }, {concurrency: 500}); 
 }
-
+//Affiche les informaiton récupérées sur les "chests"
 function displayChestData(displaySummary) {
   let notEmptyChestCount=0;
   console.log("chestID;chestStatus;roomID")
@@ -62,11 +62,11 @@ function displayChestData(displaySummary) {
    console.log("Nbre Chests : " + listChests.length + "(" + notEmptyChestCount + " not empty)")
  }
 }
-
+//Explore les "room" de chaque niveau du chateau
 async function exploreCastleByLevel(pListRoomsIDs, level) {
   if(pListRoomsIDs.length==0)return
-  let nextLevelListRoomsID = [] //Liste des rooms suivantes
-  let listPromise = [] // Liste de stockage des Promise
+  let nextLevelListRoomsID = [] 
+  let listPromise = [] 
   await pMap(pListRoomsIDs, async roomID => {
      if (listVisitedRoomID.includes(roomID) == false) 
      {let myCurrentRoom = await limiter.schedule(() => openRoom(roomID));
@@ -80,7 +80,7 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
   }, {concurrency: 500}); 
    return exploreCastleByLevel(nextLevelListRoomsID, level + 1)
   }
-
+//Récupère les information sur une "room" (call API)
 async function openRoom(pRoomID) {
   try {
     const response = await fetch(castleURL + pRoomID);
