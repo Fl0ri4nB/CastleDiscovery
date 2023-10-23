@@ -1,7 +1,11 @@
+/* 
+Last update : 20231023
+*/
+
 import Bottleneck from "bottleneck";
 
 const limiter = new Bottleneck({ maxConcurrent: 1000, minTime: 0 });
-const limiter2 = new Bottleneck({ maxConcurrent: 5000, minTime: 0 }); //TODO Utile ?
+const limiter2 = new Bottleneck({ maxConcurrent: 5000, minTime: 0 }); //TODO Utile ? A tester
 const visitedRoomID = [] //TODO  A merger avec listVisitedRooms
 const listVisitedRooms = []
 const listChests = []
@@ -59,7 +63,7 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
         visitedRoomID.push(myCurrentRoom.id);
 
         for (let chestID in myCurrentRoom.chests) {
-          let currentChest = new Chest(myCurrentRoom.chests[chestID], "indéterminé", myCurrentRoom.id) //Creation du chest, sans connaitre son status pour le moment. On ouvrira plus tard, une fois l'exploration terminée // TODO Optimisable en ouvrant directement ? 
+          let currentChest = new Chest(myCurrentRoom.chests[chestID], null, myCurrentRoom.id) //Creation du chest, sans connaitre son status pour le moment. On ouvrira plus tard, une fois l'exploration terminée // TODO Optimisable en ouvrant directement ? 
           listChests.push(currentChest) //TODO : factoriser avec la précédente [-1]
         }
       }
