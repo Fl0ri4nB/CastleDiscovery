@@ -69,7 +69,6 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
   let listPromise = [] // Liste de stockage des Promise
   
   await pMap(pListRoomsIDs, async roomID => {
-    console.log ("[" + listVisitedRooms.length + "]")
      if (listVisitedRoomID.includes(roomID) == false) 
      {let myCurrentRoom = await limiter.schedule(() => openRoom(roomID));
         listVisitedRooms.push(myCurrentRoom) // TODO Utile  ? (juste pour les stats de fin ? )
