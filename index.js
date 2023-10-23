@@ -67,6 +67,17 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
   return exploreCastleByLevel(nextLevelListRoomsID, level + 1)
 }
 
+async function openRoom(pRoomID) {
+  try {
+    const response = await fetch(castleURL + pRoomID); 
+    const roomData = await response.json();
+    const currentRoom = new Room(roomData.id, roomData.rooms, roomData.chests);
+    return currentRoom; //TODO Factoriser avec précédente [-1]
+  }
+  catch (error) {console.log("[Error on openRoom] : pRoomID="  + pRoomID + "Error : " + error)}
+}
+
+
 async function openChestInventory(pListChest) { //On ouvre les coffres TODO : voir si optim possible
   const listPromiseChestStatus = [] // Liste de stockage des Promise
   for (let chestID in pListChest) {
@@ -76,21 +87,11 @@ async function openChestInventory(pListChest) { //On ouvre les coffres TODO : vo
   await Promise.all(listPromiseChestStatus)
 }
 
-async function openRoom(pRoomID) {
-  try {
-    const currentRoomURL = castleURL + pRoomID;
-    const response = await fetch(currentRoomURL); //TODO : Factoriser avec précédente [-1]
-    const roomData = await response.json();
-    const currentRoom = new Room(roomData.id, roomData.rooms, roomData.chests);
-    return currentRoom; //TODO Factoriser avec précédente [-1]
-  }
-  catch (error) {console.log("[Error on openRoom] : pRoomID="  + pRoomID + "Error : " + error)}
-}
+
 
 async function getChestStatus(pChest) {
   try {
-    const chestURL = castleURL + pChest.id;
-    let response = await fetch(chestURL); // TODO : Factoriser avec précédente [-1]
+    let response = await fetch(castleURL + pChest.id);
     let chestData = await response.json();
     while(!chestData.status) 
       {
