@@ -19,10 +19,10 @@ startExploration()
 async function startExploration() {
   await exploreCastleByLevel([castleFirstRoom], 0)
   await openChestInventory(listChests)
-  exportDataChest()
+  exportDataChest(true)
 }
 
-function exportDataChest() {
+function exportDataChest(displaySummary) {
   console.log("chestID;chestStatus;roomID")
   for (let chestID in listChests) {
     if (listChests[chestID].status != CHEST_EMPTY_STATUS)
@@ -32,9 +32,12 @@ function exportDataChest() {
     }
   }
 
- if (DEBUG_level > 0) console.log("End of Exploration ! ")
- if (DEBUG_level > 0) console.log("Nbre Rooms : " + listVisitedRooms.length)
- if (DEBUG_level > 0) console.log("Nbre Chests : " + listChests.length + "(" + notEmptyChestCount + " not empty)")
+ if(displaySummary)  
+ {
+   console.log("End of Exploration ! ")
+   console.log("Nbre Rooms : " + listVisitedRooms.length)
+   console.log("Nbre Chests : " + listChests.length + "(" + notEmptyChestCount + " not empty)")
+ }
 }
 
 async function exploreCastleByLevel(pListRoomsIDs, level) {
