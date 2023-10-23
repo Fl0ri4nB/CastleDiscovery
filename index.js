@@ -14,7 +14,7 @@ TODO
 ---------
 
 
-*/
+*/ 
 
 import Bottleneck from "bottleneck";
 import axios from "axios";
@@ -59,8 +59,8 @@ async function getChestStatus(pChest) {
 
 async function openChestInventory(pListChest) {
   await pMap(pListChest, async chest => {
-       const currentChest = await limiter.schedule(() => getChestStatus(chest));
-  }, {concurrency: 1000});  // Adjust the concurrency level to your needs
+    await limiter.schedule(() => getChestStatus(chest));
+  }, {concurrency: 500}); 
 }
 
 function displayChestData(displaySummary) {
