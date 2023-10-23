@@ -7,9 +7,9 @@ TODO
 - Revoir la fonction openChestInventory ()
      - Utiliser p-map au lieu de Promise.all ? 
 - Revoir la fonction getChestStatus ()
-     - Utiliser retry() pour pérvenir les indispo temporaire de la réponsé API
+     - Utiliser retry() pour prévenir les indispo temporaire de la réponsé API
 	 - Utiliser axios() au lieu de fetch() ? 
-- Supprimer visitedRoomID et utiliser listVisitedRooms[x].id à la place
+- Supprimer listVisitedRoomID et utiliser listVisitedRooms[x].id à la place
 
 ---------
 
@@ -20,7 +20,7 @@ import Bottleneck from "bottleneck";
 
 const limiter = new Bottleneck({ maxConcurrent: 1000, minTime: 0 });
 const limiter2 = new Bottleneck({ maxConcurrent: 5000, minTime: 0 }); //TODO Utile ? A tester
-const visitedRoomID = [] //TODO  A merger avec listVisitedRooms
+const listVisitedRoomID = [] //TODO  A merger avec listVisitedRooms
 const listVisitedRooms = []
 const listChests = []
 const CHEST_EMPTY_STATUS = "This chest is empty :/ Try another one!"
@@ -63,8 +63,8 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
   let nextLevelListRoomsID = [] //Liste des rooms suivantes
   let listPromise = [] // Liste de stockage des Promise
   for (let roomID in pListRoomsIDs) {
-    if (visitedRoomID.includes(pListRoomsIDs[roomID]) == false) { //Petit controle pour éviter de tourner en rond, mais apparament, le cas ne se présente pas 
-	//TODO refacto pour ne pas avoir une variable dédié (visitedRoomID). utilisation de .some() ? 
+    if (listVisitedRoomID.includes(pListRoomsIDs[roomID]) == false) { //Petit controle pour éviter de tourner en rond, mais apparament, le cas ne se présente pas 
+	//TODO refacto pour ne pas avoir une variable dédié (listVisitedRoomID). utilisation de .some() ? 
       const nextRoomPromise = limiter.schedule(() => openRoom(pListRoomsIDs[roomID]))
       listPromise.push(nextRoomPromise) // Ajout dans la liste des promise en cours
     }
@@ -75,7 +75,7 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
         let myCurrentRoom = promisedListRooms[id]
         listVisitedRooms.push(myCurrentRoom) // Utilisé juste pour les stats de fin 
         for (let idConnectedRooms in myCurrentRoom.connectedRoomsID) { nextLevelListRoomsID.push(myCurrentRoom.connectedRoomsID[idConnectedRooms]) }
-        visitedRoomID.push(myCurrentRoom.id);
+        listVisitedRoomID.push(myCurrentRoom.id);
 
         for (let chestID in myCurrentRoom.chests) {
           let currentChest = new Chest(myCurrentRoom.chests[chestID], null, myCurrentRoom.id) //Creation du chest, sans connaitre son status pour le moment. On ouvrira plus tard, une fois l'exploration terminée // TODO Optimisable en ouvrant directement ? Surcharge API aux premiers essai :/ 
