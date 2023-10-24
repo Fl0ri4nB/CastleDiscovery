@@ -9,15 +9,14 @@ const limiter = new Bottleneck({ maxConcurrent: 1000, minTime: 0 });
 const listVisitedRooms = []
 const listChests = []
 const CHEST_EMPTY_STATUS = "This chest is empty :/ Try another one!"
-const castleURL = "https://infinite-castles.azurewebsites.net/"
-const castleFirstRoom = "castles/1/rooms/entry"
+const CASTLE_URL = "https://infinite-castles.azurewebsites.net/"
+const CASTLE_ENTRY = "castles/1/rooms/entry"
 const DISPLAY_SUMMARY=false
 
 startExploration()
 
 async function startExploration() {
- // listVisitedRooms.push (new Room(castleFirstRoom),null)
-  await exploreCastleByLevel([castleFirstRoom], 0)
+  await exploreCastleByLevel([CASTLE_ENTRY])
   await openChestInventory(listChests)
   displayChestData(DISPLAY_SUMMARY)
 }
@@ -26,7 +25,7 @@ async function getChestStatus(pChest) {
 
   return retry(async bail => {
     try {
-      let response = await fetch(castleURL + pChest.id);
+      let response = await fetch(CASTLE_URL + pChest.id);
       if (!response.ok) throw new Error('Network response KO :  ' + response.statusText);
       let chestData = await response.json();
       pChest.status = chestData.status
@@ -67,7 +66,7 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
   if(pListRoomsIDs.length==0)return
   let nextLevelListRoomsID = [] 
   await pMap(pListRoomsIDs, async roomID => {
-   
+
      if (listVisitedRooms.some((myRoom => myRoom.id === roomID)) == false) 
      {let myCurrentRoom = await limiter.schedule(() => openRoom(roomID));
         listVisitedRooms.push(myCurrentRoom)
@@ -77,12 +76,12 @@ async function exploreCastleByLevel(pListRoomsIDs, level) {
         }
      }
   }, {concurrency: 500}); 
-   return exploreCastleByLevel(nextLevelListRoomsID, level + 1)
+   return exploreCastleByLevel(nextLevelListRoomsID)
   }
 //Récupère les information sur une "room" (call API)
 async function openRoom(pRoomID) {
   try {
-    const response = await fetch(castleURL + pRoomID);
+    const response = await fetch(CASTLE_URL + pRoomID);
     const roomData = await response.json();
     return new Room(roomData.id, roomData.rooms, roomData.chests);
   }
