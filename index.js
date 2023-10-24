@@ -5,21 +5,21 @@ Last update : 20231023
 import Bottleneck from "bottleneck";
 import retry from 'async-retry'
 import pMap from 'p-map';
-
 const limiter = new Bottleneck({ maxConcurrent: 1000, minTime: 0 });
-const listVisitedRoomID = [] 
 const listVisitedRooms = []
 const listChests = []
 const CHEST_EMPTY_STATUS = "This chest is empty :/ Try another one!"
 const castleURL = "https://infinite-castles.azurewebsites.net/"
 const castleFirstRoom = "castles/1/rooms/entry"
+const DISPLAY_SUMMARY=false
 
 startExploration()
 
 async function startExploration() {
+ // listVisitedRooms.push (new Room(castleFirstRoom),null)
   await exploreCastleByLevel([castleFirstRoom], 0)
   await openChestInventory(listChests)
-  displayChestData(true)
+  displayChestData(DISPLAY_SUMMARY)
 }
 //Récupère le status des chests (call API)
 async function getChestStatus(pChest) {
@@ -66,13 +66,12 @@ function displayChestData(displaySummary) {
 async function exploreCastleByLevel(pListRoomsIDs, level) {
   if(pListRoomsIDs.length==0)return
   let nextLevelListRoomsID = [] 
-  let listPromise = [] 
   await pMap(pListRoomsIDs, async roomID => {
-     if (listVisitedRoomID.includes(roomID) == false) 
+   
+     if (listVisitedRooms.some((myRoom => myRoom.id === roomID)) == false) 
      {let myCurrentRoom = await limiter.schedule(() => openRoom(roomID));
         listVisitedRooms.push(myCurrentRoom)
         for (let idConnectedRooms in myCurrentRoom.connectedRoomsID) { nextLevelListRoomsID.push(myCurrentRoom.connectedRoomsID[idConnectedRooms]) }
-        listVisitedRoomID.push(myCurrentRoom.id);
         for (let chestID in myCurrentRoom.chests) {
           listChests.push(new Chest(myCurrentRoom.chests[chestID], null, myCurrentRoom.id)) 
         }
